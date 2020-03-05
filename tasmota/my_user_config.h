@@ -638,6 +638,8 @@
   #define USE_TASMOTA_SLAVE_FLASH_SPEED 57600      // Usually 57600 for 3.3V variants and 115200 for 5V variants
   #define USE_TASMOTA_SLAVE_SERIAL_SPEED 57600     // Depends on the sketch that is running on the Uno/Pro Mini
 
+// #define USE_RF433
+
 // -- End of general directives -------------------
 
 /*********************************************************************************************\

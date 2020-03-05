@@ -639,6 +639,7 @@
 #define D_SENSOR_HM10_TX       "HM10 TX"
 #define D_SENSOR_LE01MR_RX     "LE-01MR Rx"
 #define D_SENSOR_LE01MR_TX     "LE-01MR Tx"
+#define D_SENSOR_RF433_RX      "RF433 Rx"
 
 // Units
 #define D_UNIT_AMPERE "A"
