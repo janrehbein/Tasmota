@@ -210,7 +210,7 @@ boolean ovr3_getAnemometerSensor(byte buffer[], AnemometerSensor &data)
             {
                 data.gust = ovr3_getWindGust(buffer);
                 data.average = ovr3_getWindAvarage(buffer);
-                data.direction = ovr3_getWindDirectionRaw(buffer);
+                data.direction = ovr3_getWindDirectionDegree(buffer);
 
                 if (BETWEEN(data.gust, 0, 50) && BETWEEN(data.average, 0, 50) && BETWEEN(data.direction, 0, 360))
                 {

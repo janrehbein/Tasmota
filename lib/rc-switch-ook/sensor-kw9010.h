@@ -200,7 +200,7 @@ boolean kw9010_getKW9010Sensor(byte buffer[], TempHumiditySensor &data)
     data.temperatureTrend = kw9010_getTemperatureTrend(value);
     data.humidity = kw9010_getHumidity(value);
 
-    if(data.temperature >= -40 && data.temperature < 60) {
+    if(data.temperature >= -40 && data.temperature < 50) {
         if(data.humidity >= 0 && data.humidity < 100) {
             return true;
         }

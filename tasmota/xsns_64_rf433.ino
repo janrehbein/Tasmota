@@ -21,7 +21,7 @@
 
 #define XSNS_64 64
 
-// #define RF433_DEBUG
+#define RF433_DEBUG
 
 // #warning **** XSNS_64 XSNS_64 XSNS_64 XSNS_64 XSNS_64 XSNS_64 ****
 
@@ -34,7 +34,6 @@ extern "C" {
 #include <LightweightRingBuff.h>
 #include <sensor-kw9010.h>
 #include <sensor-oregon-v3.h>
-// #include "tasmota.h";
 
 RingBuff_t puleWideBuffer;
 OregonDecoderV3 orscV3;
@@ -44,18 +43,17 @@ byte OokReceivedData[100];
 byte OokReceivedDataSize;
 bool OokAvailableCode = false;
 
-RainPeriod currentRainPeriod;
-RainPeriodHistory lastRainPeriod;
+#define RAIN_PERIOD_SLOTS 5
+RainPeriod currentRainPeriods[RAIN_PERIOD_SLOTS];
+RainPeriodHistory lastRainPeriods[RAIN_PERIOD_SLOTS];
 
 #ifndef ARDUINO_ESP8266_RELEASE_2_3_0      // Fix core 2.5.x ISR not in IRAM Exception
 void Rf433StartRead(void) ICACHE_RAM_ATTR; // As iram is tight and it works this way too
 #endif                                     // ARDUINO_ESP8266_RELEASE_2_3_0
 
-const char S_JSON_RF433_WIND[] PROGMEM = "{\"Wind-%d\":{\"Guest\":%s,\"Average\":%s,\"Direction\":\"%s\",\"LowBattery\":%s}}";
-
+const char S_JSON_RF433_WIND[] PROGMEM = "{\"Wind-%d\":{\"Guest\":%s,\"Average\":%s,\"Direction\":%s,\"LowBattery\":%s}}";
 const char S_JSON_RF433_TEMP_HUM[] PROGMEM =  "{\"TempHum-%d\":{\"" D_JSON_TEMPERATURE "\":%s,\"" D_JSON_HUMIDITY "\":%d,\"LowBattery\":%s}}";
-
-const char S_JSON_RF433_RAIN[] PROGMEM =  "{\"Rain-%d\":{\"Buckets\":%d,\"" D_JSON_TEMPERATURE "\":%s,\"Trend\":\"%s\",\"RainTotal\":%d,\"LowBattery\":%s}}";
+const char S_JSON_RF433_RAIN[] PROGMEM =  "{\"Rain-%d\":{\"Buckets\":%d,\"" D_JSON_TEMPERATURE "\":%s,\"Trend\":\"%s\",\"Rate\":%s,\"RainTotal\":%s,\"LowBattery\":%s,\"Data\":\"%s\"}}";
 
 void Rf433StartRead(void)
 {
@@ -79,6 +77,20 @@ AnemometerSensor windSensor;
 
 void Rf433Read(void)
 {
+
+  RainPeriod *currentRainPeriod;
+
+  if (MidnightNow())
+  {
+    // Reset the 24h coutn for all slots
+    Serial.println("RESET AT 24hrs ...");
+    for (size_t i = 0; i < RAIN_PERIOD_SLOTS; i++)
+    {
+      currentRainPeriod = &currentRainPeriods[i];
+      currentRainPeriod->total24h = 0;
+    }
+  }
+
   if (RingBuffer_IsFull(&puleWideBuffer))
   {
 #ifdef RF433_DEBUG
@@ -108,6 +120,13 @@ void Rf433Read(void)
     Serial.print(" : ");
 #endif
 
+    char receivedDataStr[101];
+    if(OokReceivedDataSize <= 50) {
+      arrayToString(OokReceivedData, OokReceivedDataSize, receivedDataStr);
+    } else {
+      receivedDataStr[0] = '\0';
+    }
+
     KW9015Sensor kw9015sensor;
     if (kw9010_getKW9015Sensor(OokReceivedData, OokReceivedDataSize, kw9015sensor))
     {
@@ -134,6 +153,49 @@ void Rf433Read(void)
       Serial.print(" channel: ");
       Serial.print(kw9015sensor.meta.channel);
 #endif
+
+      unsigned long now = millis();
+      int8_t pos = -1;
+
+      // Check all rain slots for unused sensors (> 10min)
+      for (size_t i = 0; i < RAIN_PERIOD_SLOTS; i++)
+      {
+        currentRainPeriod = &currentRainPeriods[i];
+        if(currentRainPeriod->lastTipMillis + currentRainPeriod->windowDuration < now)
+        {
+          if(currentRainPeriod->senderId != 0xFFFF)
+          {
+            // reset used slot
+            currentRainPeriod->senderId = 0xFFFF;
+            currentRainPeriod->lastTipMillis = 0;
+            currentRainPeriod->lastTipValue = 0;
+            currentRainPeriod->endTimeMillis = 0;
+          }
+        }
+
+        // found slot for current sensor
+        if(currentRainPeriod->senderId == kw9015sensor.meta.senderId)
+        {
+          pos = i;
+        }
+      }
+
+      // if pos unknown, it is a new sensor. Select first empty slot
+      if(pos == -1) {
+          for (size_t i = 0; i < RAIN_PERIOD_SLOTS; i++)
+          {
+            currentRainPeriod = &currentRainPeriods[i];
+            if(currentRainPeriod->senderId == 0xFFFF) {
+              pos = i;
+              currentRainPeriod->senderId = kw9015sensor.meta.senderId;
+              break;
+            }
+          }
+      }
+
+      currentRainPeriod = &currentRainPeriods[pos];
+      RainPeriodHistory *lastRainPeriod = &lastRainPeriods[pos];
+
       RAIN_STATUS status = calculateRainData(currentRainPeriod, lastRainPeriod, kw9015sensor.rainFlaps);
       if (status == RAIN_STATUS_PERIOD_OVER || status == RAIN_STATUS_OK)
       {
@@ -151,10 +213,24 @@ void Rf433Read(void)
           kw9015sensor.temperatureTrend == TEMP_STEADY ? PSTR("=") : 
           PSTR("?");
 
-        const char *lowBatt = windSensor.meta.lowBat ? PSTR("true") : PSTR("false");
+        // trend == 0, Rain Alarm, trend == 3 no rain
+        // temperature was 6°C
+
+        const char *lowBatt = kw9015sensor.meta.lowBat == 1 ? PSTR("true") : PSTR("false");
+
+        double totalMmHrs = ((uint16_t)currentRainPeriod->rate * 6) * 0.3f;
+        double total24h = (uint16_t)currentRainPeriod->total24h * 0.3f;
+
+        char rainHrs[33];
+        dtostrfd(totalMmHrs, 2, rainHrs);
+
+        char rain24h[33];
+        dtostrfd(total24h, 2, rain24h);
+
+
 
         snprintf_P(mqtt_data, sizeof(mqtt_data), S_JSON_RF433_RAIN, 
-          kw9015sensor.meta.senderId, kw9015sensor.rainFlaps, temperature, trend, currentRainPeriod.total, lowBatt );
+          kw9015sensor.meta.senderId, kw9015sensor.rainFlaps, temperature, trend, rainHrs, rain24h, lowBatt, receivedDataStr );
         MqttPublishPrefixTopic_P(RESULT_OR_TELE, mqtt_data);
       }
     }
@@ -218,7 +294,8 @@ void Rf433Read(void)
       dtostrfd(windSensor.gust, 2, gust);
       char average[33];
       dtostrfd(windSensor.average, 2, average);
-      char direction[] = "SSW";
+      char direction[33];
+      dtostrfd(windSensor.direction, 1, direction);
 
       const char *lowBatt = windSensor.meta.lowBat ? PSTR("true") : PSTR("false");
 
@@ -237,6 +314,8 @@ void Rf433Init(void)
 {
   pinMode(pin[GPIO_RF433_RX], INPUT);
   attachInterrupt(pin[GPIO_RF433_RX], Rf433StartRead, CHANGE);
+
+  // currentRainPeriod.windowDuration = 
 
   RingBuffer_InitBuffer(&puleWideBuffer);
 }
