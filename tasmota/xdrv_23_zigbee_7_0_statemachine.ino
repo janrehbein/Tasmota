@@ -19,6 +19,8 @@
 
 #ifdef USE_ZIGBEE
 
+#define NO_SECURE
+
 // Status code used for ZigbeeStatus MQTT message
 // Ex: {"ZbStatus":{"Status": 3,"Message":"Configured, starting coordinator"}}
 const uint8_t  ZIGBEE_STATUS_OK = 0;                    // Zigbee started and working
@@ -141,6 +143,16 @@ const char kZigbeeGroup0[] PROGMEM = D_LOG_ZIGBEE "Subscribe to group 0 'ZbListe
 
 #ifdef USE_ZIGBEE_ZNP
 
+// AP SYSTEM CUSTOM
+
+// Set IEEE Address
+ZBM(ZBS_W_IEEE, Z_SREQ | Z_SAPI, SAPI_WRITE_CONFIGURATION, 0x01, 0x08 /* len */, 0xFF, 0xFF, 0x80, 0x97, 0x1B, 0x01, 0xA3, 0xD8 )				// 26050108FFFF80971B01A3D8
+ZBM(ZBR_W_IEEE, Z_SRSP | Z_SAPI, SAPI_WRITE_CONFIGURATION, Z_SUCCESS)				// 660500
+
+// Check IEEE Address
+ZBM(ZBS_IEEE, Z_SREQ | Z_SAPI, SAPI_READ_CONFIGURATION, 0x01 )				// 2108830000
+ZBM(ZBR_IEEE, Z_SRSP | Z_SAPI, SAPI_READ_CONFIGURATION, Z_SUCCESS, 0x01, 0x08 /* len */, 0xFF, 0xFF, 0x80, 0x97, 0x1B, 0x01, 0xA3, 0xD8)				// 6604000108FFFF80971B01A3D8
+
 // ZBS_* Zigbee Send
 // ZBR_* Zigbee Recv
 ZBM(ZBS_RESET, Z_AREQ | Z_SYS, SYS_RESET, 0x00 )        	  // 410001 SYS_RESET_REQ Hardware reset
@@ -170,6 +182,7 @@ ZBR(ZBR_CHANN, Z_SRSP | Z_SYS, SYS_OSAL_NV_READ, Z_SUCCESS,
                Z_B0(USE_ZIGBEE_CHANNEL_MASK), Z_B1(USE_ZIGBEE_CHANNEL_MASK), Z_B2(USE_ZIGBEE_CHANNEL_MASK), Z_B3(USE_ZIGBEE_CHANNEL_MASK),
                )				// 61080004xxxxxxxx
 
+#ifndef NO_SECURE
 ZBM(ZBS_PFGK, Z_SREQ | Z_SAPI, SAPI_READ_CONFIGURATION, CONF_PRECFGKEY )				// 260462
 ZBR(ZBR_PFGK, Z_SRSP | Z_SAPI, SAPI_READ_CONFIGURATION, Z_SUCCESS, CONF_PRECFGKEY,
               0x10 /* len */,
@@ -189,6 +202,8 @@ ZBR(ZBR_PFGK3, Z_SRSP | Z_SYS, SYS_OSAL_NV_READ, Z_SUCCESS,
 ZBM(ZBS_PFGKEN, Z_SREQ | Z_SYS, SYS_OSAL_NV_READ, CONF_PRECFGKEYS_ENABLE,0x00, 0x00 )				// 2108630000
 ZBM(ZBR_PFGKEN, Z_SRSP | Z_SYS, SYS_OSAL_NV_READ, Z_SUCCESS,
                 0x01 /* len */, 0x00 )				// 6108000100
+
+#endif
 
 ZBM(ZBS_LOGTYPE, Z_SREQ | Z_SYS, SYS_OSAL_NV_READ, CONF_LOGICAL_TYPE,0x00, 0x00 )				// 2108870000
 ZBM(ZBS_LOGTYPE_COORD,  Z_SRSP | Z_SYS, SYS_OSAL_NV_READ, Z_SUCCESS,
@@ -229,6 +244,7 @@ ZBM(ZBS_W_LOGTYP_COORD,  Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_LOGICAL_TYPE,0x
 ZBM(ZBS_W_LOGTYP_ROUTER, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_LOGICAL_TYPE,0x00, 0x00, 0x01 /* len */, 0x01 )				// 21098700000101
 // Write Logical Type = 02 = device
 ZBM(ZBS_W_LOGTYP_DEVICE, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_LOGICAL_TYPE,0x00, 0x00, 0x01 /* len */, 0x02 )				// 21098700000102
+#ifndef NO_SECURE
 // Write precfgkey
 ZBR(ZBS_W_PFGK, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_PRECFGKEY,0x00, 0x00,
                 0x10 /* len */,
@@ -244,6 +260,8 @@ ZBM(ZBS_WNV_SECMODE, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, Z_B0(CONF_TCLK_TABLE_STA
                       0x5a, 0x69, 0x67, 0x42, 0x65, 0x65, 0x41, 0x6c,
                       0x6c, 0x69, 0x61, 0x6e, 0x63, 0x65, 0x30, 0x39,
                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)				// 2109010100200FFFFFFFFFFFFFFFF5A6967426565416C6C69616E636530390000000000000000
+#endif
+
 // Write Z_ZDO Direct CB
 ZBM(ZBS_W_ZDODCB, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_ZDO_DIRECT_CB,0x00, 0x00, 0x01 /* len */, 0x01 )				// 21098F00000101
 // NV Init ZNP Has Configured
@@ -299,7 +317,8 @@ ZBM(ZBR_ZDO_ACTIVEEPREQ, Z_SRSP | Z_ZDO, ZDO_ACTIVE_EP_REQ, Z_SUCCESS)  // 65050
 ZBM(ZBR_ZDO_ACTIVEEPRSP_NONE, Z_AREQ | Z_ZDO, ZDO_ACTIVE_EP_RSP, 0x00, 0x00 /* srcAddr */, Z_SUCCESS,
     0x00, 0x00 /* nwkaddr */, 0x00 /* activeepcount */)  // 45050000 - no Ep running
 ZBM(ZBR_ZDO_ACTIVEEPRSP_OK, Z_AREQ | Z_ZDO, ZDO_ACTIVE_EP_RSP, 0x00, 0x00 /* srcAddr */, Z_SUCCESS,
-    0x00, 0x00 /* nwkaddr */, 0x02 /* activeepcount */, 0x0B, 0x01 /* the actual endpoints */)  // 25050000 - no Ep running
+    // 0x00, 0x00 /* nwkaddr */, 0x02 /* activeepcount */, 0x0B, 0x01 /* the actual endpoints */)  // 25050000 - no Ep running
+    0x00, 0x00 /* nwkaddr */, 0x03 /* activeepcount */, 0x14, 0x0B, 0x01 /* the actual endpoints */)  // 25050000 - no Ep running
 
 // Z_AF:register profile:104, ep:01
 ZBM(ZBS_AF_REGISTER01, Z_SREQ | Z_AF, AF_REGISTER, 0x01 /* endpoint */, Z_B0(Z_PROF_HA), Z_B1(Z_PROF_HA),    // 24000401050000000000
@@ -309,6 +328,12 @@ ZBM(ZBR_AF_REGISTER,   Z_SRSP | Z_AF, AF_REGISTER, Z_SUCCESS)   // 640000
 ZBM(ZBS_AF_REGISTER0B, Z_SREQ | Z_AF, AF_REGISTER, 0x0B /* endpoint */, Z_B0(Z_PROF_HA), Z_B1(Z_PROF_HA),    // 2400040B050000000000
                         0x05, 0x00 /* AppDeviceId */, 0x00 /* AppDevVer */, 0x00 /* LatencyReq */,
                         0x00 /* AppNumInClusters */, 0x00 /* AppNumInClusters */)
+
+// Add AP System Profile 0x0f05 and endpoint 0x14
+ZBM(ZBS_AF_REGISTER_APS_SYSTEMS, Z_SREQ | Z_AF, AF_REGISTER, 0x14 /* endpoint */, Z_B0(Z_PROF_AP_SYSTEMS), Z_B1(Z_PROF_AP_SYSTEMS),    // 240014050F010000000000
+                        0x01, 0x00 /* AppDeviceId */, 0x00 /* AppDevVer */, 0x00 /* LatencyReq */,
+                        0x00 /* AppNumInClusters */, 0x00 /* AppNumInClusters */)
+
 // Z_AF:register profile:104, ep:01 - main clusters for router or device
 ZBM(ZBS_AF_REGISTER_ALL, Z_SREQ | Z_AF, AF_REGISTER, 0x01 /* endpoint */, Z_B0(Z_PROF_HA), Z_B1(Z_PROF_HA),    // 24000401050000000000
                         0x05, 0x00 /* AppDeviceId */, 0x00 /* AppDevVer */, 0x00 /* LatencyReq */,
@@ -329,6 +354,8 @@ ZBM(ZBR_PERMITJOIN_AREQ_RSP,  Z_AREQ | Z_ZDO, ZDO_MGMT_PERMIT_JOIN_RSP, 0x00, 0x
 void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_panid, uint64_t zb_precfgkey_l, uint64_t zb_precfgkey_h) {
   uint32_t zb_channel_mask = (1 << zb_channel);
 
+  AddLog(LOG_LEVEL_ERROR, PSTR(D_LOG_ZIGBEE "-------------------> zb_channel (%d)"), zb_channel);
+
   ZBW(ZBR_PAN, Z_SRSP | Z_SYS, SYS_OSAL_NV_READ, Z_SUCCESS, 0x02 /* len */,
                 Z_B0(zb_pan_id), Z_B1(zb_pan_id) )				// 61080002xxxx
 
@@ -342,6 +369,8 @@ void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_pa
                 0x04 /* len */,
                 Z_B0(zb_channel_mask), Z_B1(zb_channel_mask), Z_B2(zb_channel_mask), Z_B3(zb_channel_mask),
                 )				// 61080004xxxxxxxx
+
+#ifndef NO_SECURE
   // Zstack 1.2
   ZBW(ZBR_PFGK, Z_SRSP | Z_SAPI, SAPI_READ_CONFIGURATION, Z_SUCCESS, CONF_PRECFGKEY,
                 0x10 /* len */,
@@ -360,6 +389,7 @@ void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_pa
                 Z_B4(zb_precfgkey_h), Z_B5(zb_precfgkey_h), Z_B6(zb_precfgkey_h), Z_B7(zb_precfgkey_h),
                 /*0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F,
                 0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0D*/ )				// 6108001001030507090B0D0F00020406080A0C0D
+#endif
 
   ZBW(ZBS_W_PAN, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_PANID,0x00, 0x00, 0x02 /* len */, Z_B0(zb_pan_id), Z_B1(zb_pan_id)  )				// 210983000002xxxx
   // Write EXT PAN ID
@@ -371,6 +401,7 @@ void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_pa
   ZBW(ZBS_W_CHANN, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_CHANLIST,0x00, 0x00, 0x04 /* len */,
                   Z_B0(zb_channel_mask), Z_B1(zb_channel_mask), Z_B2(zb_channel_mask), Z_B3(zb_channel_mask),
                   /*0x00, 0x08, 0x00, 0x00*/ )				// 210984000004xxxxxxxx
+#ifndef NO_SECURE
   // Write precfgkey
   ZBW(ZBS_W_PFGK, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_PRECFGKEY,0x00, 0x00,
                   0x10 /* len */,
@@ -379,6 +410,7 @@ void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_pa
                   Z_B0(zb_precfgkey_h), Z_B1(zb_precfgkey_h), Z_B2(zb_precfgkey_h), Z_B3(zb_precfgkey_h),
                   Z_B4(zb_precfgkey_h), Z_B5(zb_precfgkey_h), Z_B6(zb_precfgkey_h), Z_B7(zb_precfgkey_h),
                   )				// 21096200001001030507090B0D0F00020406080A0C0D
+#endif
 }
 
 // Update configuration for ZStack 3
@@ -423,14 +455,29 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_SEND(ZBS_ZNPHC)                        // check value of ZNP Has Configured
     ZI_WAIT_RECV(2000, ZBR_ZNPHC)
 
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------1")
+
     ZI_SEND(ZBS_LOGTYPE)                      // check the logical type
     ZI_WAIT_RECV(1000, ZBS_LOGTYPE_COORD)     // it should be coordinator
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------2")
     ZI_SEND(ZBS_PAN)                          // check PAN ID
     ZI_WAIT_RECV(1000, ZBR_PAN)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------3")
     ZI_SEND(ZBS_EXTPAN)                       // check EXT PAN ID
     ZI_WAIT_RECV(1000, ZBR_EXTPAN)
-    ZI_SEND(ZBS_CHANN)                        // check CHANNEL
-    ZI_WAIT_RECV(1000, ZBR_CHANN)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------4")
+
+    // CS: Why we are not able to switch the channel? The firmware is currently build for channel 16 ! Fixme !!
+
+    // ZI_SEND(ZBS_CHANN)                        // check CHANNEL
+    // ZI_WAIT_RECV(1000, ZBR_CHANN)
+    // ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------5")
+    ZI_SEND(ZBS_IEEE)                        // check IEEE
+    ZI_WAIT_RECV(1000, ZBR_IEEE)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------6")
+
+
+#ifndef NO_SECURE
     ZI_SEND(ZBS_PFGKEN)                       // check PFGKEN
     ZI_WAIT_RECV(1000, ZBR_PFGKEN)
 
@@ -442,14 +489,15 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
   ZI_LABEL(ZIGBEE_LABEL_ZB3_INIT)
     ZI_SEND(ZBS_PFGK3)                        // check PFGK on ZB3
     ZI_WAIT_RECV(1000, ZBR_PFGK3)
-    //ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee configuration ok")
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee configuration ok")
     // all is good, we can start
+#endif
 
   ZI_LABEL(ZIGBEE_LABEL_START_COORD)                // START ZNP App
     ZI_MQTT_STATE(ZIGBEE_STATUS_STARTING, kConfiguredCoord)
     ZI_ON_ERROR_GOTO(ZIGBEE_LABEL_ABORT)
     // Z_ZDO:startupFromApp
-    //ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "starting zigbee coordinator")
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "starting zigbee coordinator")
     ZI_SEND(ZBS_STARTUPFROMAPP)                       // start coordinator
     ZI_WAIT_RECV(5000, ZBR_STARTUPFROMAPP)        // wait for sync ack of command
     ZI_WAIT_UNTIL_FUNC(20000, AREQ_STARTUPFROMAPP, &ZNP_ReceiveStateChange)      // wait for async message that coordinator started, max 20s
@@ -466,6 +514,17 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_WAIT_RECV(1000, ZBR_AF_REGISTER)
     ZI_SEND(ZBS_AF_REGISTER0B)                    // Z_AF register for endpoint 0B, profile 0x0104 Home Automation
     ZI_WAIT_RECV(1000, ZBR_AF_REGISTER)
+
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE " inverter -------------------1")
+    ZI_SEND(ZBS_AF_REGISTER_APS_SYSTEMS)          // Z_AF register for endpoint 14, profile 0x0F05 APS Systems PV inverter
+    ZI_WAIT_RECV(1000, ZBR_AF_REGISTER)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "inverter -------------------2")
+
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE " ieee -------------------1")
+    ZI_SEND(ZBS_W_IEEE)          // Z_AF register for endpoint 14, profile 0x0F05 APS Systems PV inverter
+    ZI_WAIT_RECV(1000, ZBR_W_IEEE)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "ieee -------------------2")
+
     // redo Z_ZDO:activeEpReq to check that Ep are available
     ZI_SEND(ZBS_ZDO_ACTIVEEPREQ)                  // Z_ZDO:activeEpReq
     ZI_WAIT_RECV(1000, ZBR_ZDO_ACTIVEEPREQ)
@@ -489,7 +548,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
 
   ZI_LABEL(ZIGBEE_LABEL_FACT_RESET_COORD)                                    // reformat device
     ZI_MQTT_STATE(ZIGBEE_STATUS_RESET_CONF, kResetting)
-    //ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee bad configuration of device, doing a factory reset")
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee bad configuration of device, doing a factory reset")
     ZI_ON_ERROR_GOTO(ZIGBEE_LABEL_ABORT)
     ZI_SEND(ZBS_FACTRES)                          // factory reset
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
@@ -499,16 +558,22 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
     ZI_SEND(ZBS_W_EXTPAN)                         // write EXT PAN ID
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE " CHANNEL -------------------1")
     ZI_SEND(ZBS_W_CHANN)                          // write CHANNEL
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE " CHANNEL -------------------2")
     ZI_SEND(ZBS_W_LOGTYP_COORD)                   // write Logical Type = coordinator
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
+
+#ifndef NO_SECURE
     ZI_SEND(ZBS_W_PFGK)                           // write PRECFGKEY
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
     ZI_SEND(ZBS_W_PFGKEN)                         // write PRECFGKEY Enable
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
     ZI_SEND(ZBS_WNV_SECMODE)                      // write Security Mode
     ZI_WAIT_RECV(1000, ZBR_WNV_OKE)               // Tolerate error for ZNP 3.x
+#endif
+
     ZI_SEND(ZBS_W_ZDODCB)                         // write Z_ZDO Direct CB
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
     // Now mark the device as ready, writing 0x55 in memory slot 0x0F00
@@ -517,7 +582,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_SEND(ZBS_WNV_ZNPHC)                        // Write NV ZNP Has Configured
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
 
-    //ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee device reconfigured")
+    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee device reconfigured")
     ZI_GOTO(ZIGBEE_LABEL_START_COORD)
 
     // ======================================================================
