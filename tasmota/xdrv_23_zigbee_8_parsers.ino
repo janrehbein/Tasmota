@@ -1683,6 +1683,9 @@ void Z_IncomingMessage(class ZCLFrame &zcl_received) {
 
     AddLog_P(LOG_LEVEL_DEBUG, PSTR(D_LOG_ZIGBEE D_JSON_ZIGBEEZCL_RAW_RECEIVED ": {\"0x%04X\":{%s}}"), srcaddr, attr_list.toString().c_str());
 
+    // Add AP Systems PV parser
+    Z_APS_Parser(zcl_received.getPayload());
+
     // discard the message if it was sent by us (broadcast or group loopback)
     if (srcaddr == localShortAddr) {
       AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_ZIGBEE  "loopback message, ignoring"));
