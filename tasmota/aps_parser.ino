@@ -1,5 +1,9 @@
+#ifdef USE_ZIGBEE
+#ifdef USE_AP_SYSTEMS
+
 // I use this for coding, it resolves all visual studio code issue
 // #define ZB_COMILE_TIME_HELPERS
+
 
 #ifdef ZB_COMILE_TIME_HELPERS
 #include "stdio.h"
@@ -225,3 +229,6 @@ boolean Z_APS_Parser(const class SBuffer &buff, const uint16_t srcaddr)
 
   return true;
 }
+
+#endif
+#endif

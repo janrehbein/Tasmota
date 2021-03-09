@@ -1953,12 +1953,17 @@ int32_t ZNP_ReceiveAfIncomingMessage(int32_t res, const SBuffer &buf) {
                               linkquality, securityuse, seqnumber);
   //
 
+
+#ifdef USE_AP_SYSTEMS
   // Try AP Systems PV parser
   // if true, skip default processing
   if (!Z_APS_Parser(buf, srcaddr))
   {
     Z_IncomingMessage(zcl_received);
   }
+#else
+  Z_IncomingMessage(zcl_received);
+#endif
 
   return -1;
 }

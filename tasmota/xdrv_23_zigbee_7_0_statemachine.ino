@@ -35,7 +35,7 @@
 #include "my_user_config.h"
 #endif
 
-#define USE_ZIGBEE_DISABLED_SECURITY
+// #define USE_ZIGBEE_DISABLED_SECURITY
 
 // Status code used for ZigbeeStatus MQTT message
 // Ex: {"ZbStatus":{"Status": 3,"Message":"Configured, starting coordinator"}}
