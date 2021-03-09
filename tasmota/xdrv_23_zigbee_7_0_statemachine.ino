@@ -16,10 +16,26 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 #ifdef USE_ZIGBEE
 
-#define NO_SECURE
+// #define ZB_COMILE_TIME_HELPERS
+
+#ifdef ZB_COMILE_TIME_HELPERS
+#include "stdio.h"
+#include "tasmota.h"
+#include "tasmota_globals.h"
+#include "i18n.h"
+#include "support.ino"
+#include "SBuffer.hpp"
+#include "xdrv_02_mqtt.ino"
+#include "xdrv_23_zigbee_0_constants.ino"
+#include "xdrv_23_zigbee_1_headers.ino"
+#include "xdrv_23_zigbee_8_parsers.ino"
+#include "xdrv_23_zigbee_9_serial.ino"
+#include "my_user_config.h"
+#endif
+
+#define USE_ZIGBEE_DISABLED_SECURITY
 
 // Status code used for ZigbeeStatus MQTT message
 // Ex: {"ZbStatus":{"Status": 3,"Message":"Configured, starting coordinator"}}
@@ -182,7 +198,7 @@ ZBR(ZBR_CHANN, Z_SRSP | Z_SYS, SYS_OSAL_NV_READ, Z_SUCCESS,
                Z_B0(USE_ZIGBEE_CHANNEL_MASK), Z_B1(USE_ZIGBEE_CHANNEL_MASK), Z_B2(USE_ZIGBEE_CHANNEL_MASK), Z_B3(USE_ZIGBEE_CHANNEL_MASK),
                )				// 61080004xxxxxxxx
 
-#ifndef NO_SECURE
+#ifndef USE_ZIGBEE_DISABLED_SECURITY
 ZBM(ZBS_PFGK, Z_SREQ | Z_SAPI, SAPI_READ_CONFIGURATION, CONF_PRECFGKEY )				// 260462
 ZBR(ZBR_PFGK, Z_SRSP | Z_SAPI, SAPI_READ_CONFIGURATION, Z_SUCCESS, CONF_PRECFGKEY,
               0x10 /* len */,
@@ -244,7 +260,7 @@ ZBM(ZBS_W_LOGTYP_COORD,  Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_LOGICAL_TYPE,0x
 ZBM(ZBS_W_LOGTYP_ROUTER, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_LOGICAL_TYPE,0x00, 0x00, 0x01 /* len */, 0x01 )				// 21098700000101
 // Write Logical Type = 02 = device
 ZBM(ZBS_W_LOGTYP_DEVICE, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_LOGICAL_TYPE,0x00, 0x00, 0x01 /* len */, 0x02 )				// 21098700000102
-#ifndef NO_SECURE
+#ifndef USE_ZIGBEE_DISABLED_SECURITY
 // Write precfgkey
 ZBR(ZBS_W_PFGK, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_PRECFGKEY,0x00, 0x00,
                 0x10 /* len */,
@@ -370,7 +386,7 @@ void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_pa
                 Z_B0(zb_channel_mask), Z_B1(zb_channel_mask), Z_B2(zb_channel_mask), Z_B3(zb_channel_mask),
                 )				// 61080004xxxxxxxx
 
-#ifndef NO_SECURE
+#ifndef USE_ZIGBEE_DISABLED_SECURITY
   // Zstack 1.2
   ZBW(ZBR_PFGK, Z_SRSP | Z_SAPI, SAPI_READ_CONFIGURATION, Z_SUCCESS, CONF_PRECFGKEY,
                 0x10 /* len */,
@@ -401,7 +417,7 @@ void ZNP_UpdateConfig(uint8_t zb_channel, uint16_t zb_pan_id, uint64_t zb_ext_pa
   ZBW(ZBS_W_CHANN, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_CHANLIST,0x00, 0x00, 0x04 /* len */,
                   Z_B0(zb_channel_mask), Z_B1(zb_channel_mask), Z_B2(zb_channel_mask), Z_B3(zb_channel_mask),
                   /*0x00, 0x08, 0x00, 0x00*/ )				// 210984000004xxxxxxxx
-#ifndef NO_SECURE
+#ifndef USE_ZIGBEE_DISABLED_SECURITY
   // Write precfgkey
   ZBW(ZBS_W_PFGK, Z_SREQ | Z_SYS, SYS_OSAL_NV_WRITE, CONF_PRECFGKEY,0x00, 0x00,
                   0x10 /* len */,
@@ -477,7 +493,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------6")
 
 
-#ifndef NO_SECURE
+#ifndef USE_ZIGBEE_DISABLED_SECURITY
     ZI_SEND(ZBS_PFGKEN)                       // check PFGKEN
     ZI_WAIT_RECV(1000, ZBR_PFGKEN)
 
@@ -565,7 +581,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_SEND(ZBS_W_LOGTYP_COORD)                   // write Logical Type = coordinator
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
 
-#ifndef NO_SECURE
+#ifndef USE_ZIGBEE_DISABLED_SECURITY
     ZI_SEND(ZBS_W_PFGK)                           // write PRECFGKEY
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
     ZI_SEND(ZBS_W_PFGKEN)                         // write PRECFGKEY Enable
