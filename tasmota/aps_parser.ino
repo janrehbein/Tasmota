@@ -45,6 +45,8 @@
 #define GET_TOTAL_POWER4(buff, offset) getBigEndian(buff, APS_QS1_TODAY_ENERGY_CH4 + offset, 3)
 
 #define CALC_CURRENT_POWER(currentTotal, lastTotal, timeDiff) ((currentTotal - lastTotal) * 8.311f) / timeDiff;
+#define CALC_POWER_KW(todayEnergyRaw) todayEnergyRaw * 8.311f / 3600 / 1000
+#define CALC_POWER(todayEnergyRaw) todayEnergyRaw * 8.311f / 3600
 
 #define GET_CURRENT1(buff, offset, isQs1) (((buff.get8(isQs1 ? APS_QS1_CURRENT_CH1 : APS_YC600_CURRENT_CH1 + offset + 1) & 0x0F) << 8) | buff.get8(isQs1 ? APS_QS1_CURRENT_CH1 : APS_YC600_CURRENT_CH1 + offset)) / 160.0f
 #define GET_CURRENT2(buff, offset, isQs1) (((buff.get8(isQs1 ? APS_QS1_CURRENT_CH2 : APS_YC600_CURRENT_CH2 + offset + 1) & 0x0F) << 8) | buff.get8(isQs1 ? APS_QS1_CURRENT_CH2 : APS_YC600_CURRENT_CH2 + offset)) / 160.0f

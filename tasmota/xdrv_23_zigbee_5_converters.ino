@@ -1511,7 +1511,7 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
 
   // DC Channel 1
   currentDc = GET_CURRENT1(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
-  totalPowerDc = GET_TOTAL_POWER1(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
+  totalPowerDc = CALC_POWER(GET_TOTAL_POWER1(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1));
   attr_dc_side.addAttributePMEM(PSTR("TotalPower1")).setUInt(totalPowerDc);
   attr_dc_side.addAttributePMEM(PSTR("Current1")).setFloat(currentDc);
   totalPower += totalPowerDc;
@@ -1524,7 +1524,7 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
 
   // DC Channel 2
   currentDc = GET_CURRENT2(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
-  totalPowerDc = GET_TOTAL_POWER2(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
+  totalPowerDc = CALC_POWER(GET_TOTAL_POWER2(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1));
   attr_dc_side.addAttributePMEM(PSTR("TotalPower2")).setUInt(totalPowerDc);
   attr_dc_side.addAttributePMEM(PSTR("Current2")).setFloat(currentDc);
   totalPower += totalPowerDc;
@@ -1539,7 +1539,7 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
   {
     // DC Channel 3
     currentDc = GET_CURRENT3(_payload, APS_OFFSET_ZCL_PAYLOAD);
-    totalPowerDc = GET_TOTAL_POWER3(_payload, APS_OFFSET_ZCL_PAYLOAD);
+    totalPowerDc = CALC_POWER(GET_TOTAL_POWER3(_payload, APS_OFFSET_ZCL_PAYLOAD));
     attr_dc_side.addAttributePMEM(PSTR("TotalPower3")).setUInt(totalPowerDc);
     attr_dc_side.addAttributePMEM(PSTR("Current3")).setFloat(currentDc);
 
@@ -1551,7 +1551,7 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
 
     // DC Channel 4
     currentDc = GET_CURRENT4(_payload, APS_OFFSET_ZCL_PAYLOAD);
-    totalPowerDc = GET_TOTAL_POWER4(_payload, APS_OFFSET_ZCL_PAYLOAD);
+    totalPowerDc = CALC_POWER(GET_TOTAL_POWER4(_payload, APS_OFFSET_ZCL_PAYLOAD));
     attr_dc_side.addAttributePMEM(PSTR("TotalPower4")).setUInt(totalPowerDc);
     attr_dc_side.addAttributePMEM(PSTR("Current4")).setFloat(currentDc);
     if (timeDiff > 0 && apsystems.validTotalPower4()) {
