@@ -1506,7 +1506,7 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
 
   // Temperature
   float temperature = GET_TEMPERATURE(_payload, APS_OFFSET_ZCL_PAYLOAD) ;
-  attr_list.addAttribute(0x0402, 0x0000).setInt(temperature * 10);
+  attr_list.addAttribute(0x0402, 0x0000).setInt(temperature * 100);
   AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR("Temperature %1_f C"), &temperature);
 
   // DC Channel 1
