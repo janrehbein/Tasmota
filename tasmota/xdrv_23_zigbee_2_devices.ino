@@ -32,6 +32,7 @@ enum class Z_Data_Type : uint8_t {
   Z_Alarm = 4,
   Z_Thermo = 5,             // Thermostat and sensor for home environment (temp, himudity, pressure)
   Z_OnOff = 6,              // OnOff, Buttons and Relays (always complements Lights and Plugs)
+  Z_APSystems = 7,          // AP Systems PV Inverter
   Z_Mode = 0xE,             // Encode special modes for communication, like Tuya Zigbee protocol
   Z_Ext = 0xF,              // extended for other values
   Z_Device = 0xFF           // special value when parsing Device level attributes
@@ -45,7 +46,7 @@ const uint8_t Z_Data_Type_char[] PROGMEM = {
   'A',      // 0x04 Z_Data_Type::Z_Alarm
   'T',      // 0x05 Z_Data_Type::Z_Thermo
   'O',      // 0x06 Z_Data_Type::Z_OnOff
-  '\0',     // 0x07
+  'V',      // 0x07 Z_Data_Type::Z_APSystems
   '\0',     // 0x08
   '\0',     // 0x09
   '\0',     // 0x0A
@@ -168,6 +169,51 @@ public:
 
   // 1 byte
   uint8_t           power;
+};
+
+
+/*********************************************************************************************\
+ * Device specific: AP Systems
+\*********************************************************************************************/
+class Z_Data_APSystems : public Z_Data {
+public:
+  Z_Data_APSystems(uint8_t endpoint = 0) :
+    Z_Data(Z_Data_Type::Z_APSystems, endpoint),
+    time_stamp(0xFFFF),
+    total_power1(0xFFFFFFFF),
+    total_power2(0xFFFFFFFF),
+    total_power3(0xFFFFFFFF),
+    total_power4(0xFFFFFFFF)
+    {}
+
+  inline bool validTimeStamp(void)   const { return 0xFFFF != time_stamp; }
+  inline bool validTotalPower1(void)   const { return 0xFFFFFFFF != total_power1; }
+  inline bool validTotalPower2(void)   const { return 0xFFFFFFFF != total_power2; }
+  inline bool validTotalPower3(void)   const { return 0xFFFFFFFF != total_power3; }
+  inline bool validTotalPower4(void)   const { return 0xFFFFFFFF != total_power4; }
+
+  inline uint16_t getTimeStamp(void) const { return time_stamp; }
+  inline uint32_t getTotalPower1(void) const { return total_power1; }
+  inline uint32_t getTotalPower2(void) const { return total_power2; }
+  inline uint32_t getTotalPower3(void) const { return total_power3; }
+  inline uint32_t getTotalPower4(void) const { return total_power4; }
+
+  inline void setTimeStamp(uint16_t _time_stamp)  { time_stamp = _time_stamp; }
+  inline void setTotalPower1(uint32_t _total_power1)  { total_power1 = _total_power1; }
+  inline void setTotalPower2(uint32_t _total_power2)  { total_power2 = _total_power2; }
+  inline void setTotalPower3(uint32_t _total_power3)  { total_power3 = _total_power3; }
+  inline void setTotalPower4(uint32_t _total_power4)  { total_power4 = _total_power4; }
+
+  static const Z_Data_Type type = Z_Data_Type::Z_APSystems;
+  // 4 bytes
+  // uint16_t              mains_voltage;  // AC voltage
+  // int16_t               mains_power;    // Active power
+
+  uint16_t              time_stamp;
+  uint32_t              total_power1;
+  uint32_t              total_power2;
+  uint32_t              total_power3;
+  uint32_t              total_power4;
 };
 
 /*********************************************************************************************\
@@ -539,7 +585,7 @@ const uint8_t Z_Data_Type_len[] PROGMEM = {
   sizeof(Z_Data_Alarm),     // 0x04 Z_Data_Type::Z_Alarm
   sizeof(Z_Data_Thermo),    // 0x05 Z_Data_Type::Z_Thermo
   sizeof(Z_Data_OnOff),     // 0x06 Z_Data_Type::Z_OnOff
-  0,     // 0x07
+  sizeof(Z_Data_APSystems), // 0x07 Z_Data_Type::Z_APSystems
   0,     // 0x08
   0,     // 0x09
   0,     // 0x0A
@@ -600,6 +646,7 @@ bool Z_Data_Set::updateData(Z_Data & elt) {
     case Z_Data_Type::Z_Alarm:  return ((Z_Data_Alarm&) elt).update();       break;
     case Z_Data_Type::Z_Thermo: return ((Z_Data_Thermo&) elt).update();      break;
     case Z_Data_Type::Z_OnOff:  return ((Z_Data_OnOff&) elt).update();       break;
+    case Z_Data_Type::Z_APSystems:  return ((Z_Data_APSystems&) elt).update();       break;
     case Z_Data_Type::Z_PIR:    return ((Z_Data_PIR&) elt).update();         break;
     case Z_Data_Type::Z_Mode:   return ((Z_Data_Mode&) elt).update();        break;
     default: return false;
@@ -618,6 +665,8 @@ Z_Data & Z_Data_Set::getByType(Z_Data_Type type, uint8_t ep) {
       return get<Z_Data_Thermo>(ep);
     case Z_Data_Type::Z_OnOff:
       return get<Z_Data_OnOff>(ep);
+    case Z_Data_Type::Z_APSystems:
+      return get<Z_Data_APSystems>(ep);
     case Z_Data_Type::Z_PIR:
       return get<Z_Data_PIR>(ep);
     case Z_Data_Type::Z_Mode:
