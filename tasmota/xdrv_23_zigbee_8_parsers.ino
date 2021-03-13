@@ -1669,7 +1669,20 @@ void Z_IncomingMessage(class ZCLFrame &zcl_received) {
       zcl_received.parseReadAttributesResponse(attr_list);
       if (clusterid) { defer_attributes = true; }  // don't defer system Cluster=0 messages
     } else if ( (!zcl_received.isClusterSpecificCommand()) && (ZCL_READ_ATTRIBUTES == zcl_received.getCmdId())) {
+
+#ifdef USE_AP_SYSTEMS
+      // identfy AP Systems special messages
+      if (clusterid == 0x0106 && srcendpoint == 20) {
+        zcl_received.parseAPSAttributes(attr_list);
+      } else {
+#endif
+
       zcl_received.parseReadAttributes(attr_list);
+
+#ifdef USE_AP_SYSTEMS
+      }
+#endif
+
       // never defer read_attributes, so the auto-responder can send response back on a per cluster basis
     } else if ( (!zcl_received.isClusterSpecificCommand()) && (ZCL_READ_REPORTING_CONFIGURATION_RESPONSE == zcl_received.getCmdId())) {
       zcl_received.parseReadConfigAttributes(attr_list);
@@ -1953,17 +1966,12 @@ int32_t ZNP_ReceiveAfIncomingMessage(int32_t res, const SBuffer &buf) {
                               linkquality, securityuse, seqnumber);
   //
 
+// #ifdef USE_AP_SYSTEMS
+//   // Try AP Systems PV parser
+//   Z_APS_Parser(buf, srcaddr);
+// #endif
 
-#ifdef USE_AP_SYSTEMS
-  // Try AP Systems PV parser
-  // if true, skip default processing
-  if (!Z_APS_Parser(buf, srcaddr))
-  {
-    Z_IncomingMessage(zcl_received);
-  }
-#else
   Z_IncomingMessage(zcl_received);
-#endif
 
   return -1;
 }

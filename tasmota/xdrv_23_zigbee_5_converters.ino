@@ -773,7 +773,10 @@ public:
     return _frame_control.b.frame_type & 1;
   }
 
+#ifdef USE_AP_SYSTEMS
+  // parse photovoltaics messages from AP Systems
   void parseAPSAttributes(Z_attribute_list& attr_list);
+#endif
 
   void parseReportAttributes(Z_attribute_list& attr_list);
   void generateSyntheticAttributes(Z_attribute_list& attr_list);
@@ -1443,6 +1446,8 @@ void sendHueUpdate(uint16_t shortaddr, uint16_t groupaddr, uint16_t cluster, uin
   }
 }
 
+#ifdef USE_AP_SYSTEMS
+
 void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
 
   // create the device entry if it does not exist and if it's not the local device
@@ -1479,34 +1484,34 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
     return;
   }
 
-  uint16_t timeStamp = GET_TIME_STAMP(_payload, -22, isQs1);
+  uint16_t timeStamp = GET_TIME_STAMP(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
   AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR("TimeStamp %d"), timeStamp);
 
   // set time difference after seconds telegram
   if (apsystems.validTimeStamp()) {
-    timeDiff = lastTimeStamp == 0 ? 0 : timeStamp - apsystems.getTimeStamp();
+    timeDiff = timeStamp - apsystems.getTimeStamp();
     AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR("Time Diff %d"), timeDiff);
   }
   apsystems.setTimeStamp(timeStamp);
 
   // AC Output Voltage
-  float voltageAc = GET_VOLTAGE_AC(_payload, -22);
+  float voltageAc = GET_VOLTAGE_AC(_payload, APS_OFFSET_ZCL_PAYLOAD);
   attr_list.addAttribute(0x0B04, 0x0505).setUInt(voltageAc);
   AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR("AC Voltage %1_f V"), &voltageAc);
 
   // AC Output Requence
-  float frequence = GET_FREQUENCE(_payload, -22);
+  float frequence = GET_FREQUENCE(_payload, APS_OFFSET_ZCL_PAYLOAD);
   attr_list.addAttribute(0x0001, 0x0001).setUInt(frequence);
   AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR("Frequence %2_f Hz"), &frequence);
 
   // Temperature
-  float temperature = GET_TEMPERATURE(_payload, -22) ;
+  float temperature = GET_TEMPERATURE(_payload, APS_OFFSET_ZCL_PAYLOAD) ;
   attr_list.addAttribute(0x0402, 0x0000).setInt(temperature * 10);
   AddLog_P(LOG_LEVEL_DEBUG_MORE, PSTR("Temperature %1_f C"), &temperature);
 
   // DC Channel 1
-  currentDc = GET_CURRENT1(_payload, -22, isQs1);
-  totalPowerDc = GET_TOTAL_POWER1(_payload, -22, isQs1);
+  currentDc = GET_CURRENT1(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
+  totalPowerDc = GET_TOTAL_POWER1(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
   attr_dc_side.addAttributePMEM(PSTR("TotalPower1")).setUInt(totalPowerDc);
   attr_dc_side.addAttributePMEM(PSTR("Current1")).setFloat(currentDc);
   totalPower += totalPowerDc;
@@ -1518,8 +1523,8 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
   apsystems.setTotalPower1(totalPowerDc); 
 
   // DC Channel 2
-  currentDc = GET_CURRENT2(_payload, -22, isQs1);
-  totalPowerDc = GET_TOTAL_POWER2(_payload, -22, isQs1);
+  currentDc = GET_CURRENT2(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
+  totalPowerDc = GET_TOTAL_POWER2(_payload, APS_OFFSET_ZCL_PAYLOAD, isQs1);
   attr_dc_side.addAttributePMEM(PSTR("TotalPower2")).setUInt(totalPowerDc);
   attr_dc_side.addAttributePMEM(PSTR("Current2")).setFloat(currentDc);
   totalPower += totalPowerDc;
@@ -1533,8 +1538,8 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
   if (isQs1)
   {
     // DC Channel 3
-    currentDc = GET_CURRENT3(_payload, -22);
-    totalPowerDc = GET_TOTAL_POWER3(_payload, -22);
+    currentDc = GET_CURRENT3(_payload, APS_OFFSET_ZCL_PAYLOAD);
+    totalPowerDc = GET_TOTAL_POWER3(_payload, APS_OFFSET_ZCL_PAYLOAD);
     attr_dc_side.addAttributePMEM(PSTR("TotalPower3")).setUInt(totalPowerDc);
     attr_dc_side.addAttributePMEM(PSTR("Current3")).setFloat(currentDc);
 
@@ -1545,8 +1550,8 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
     apsystems.setTotalPower3(totalPowerDc);
 
     // DC Channel 4
-    currentDc = GET_CURRENT4(_payload, -22);
-    totalPowerDc = GET_TOTAL_POWER4(_payload, -22);
+    currentDc = GET_CURRENT4(_payload, APS_OFFSET_ZCL_PAYLOAD);
+    totalPowerDc = GET_TOTAL_POWER4(_payload, APS_OFFSET_ZCL_PAYLOAD);
     attr_dc_side.addAttributePMEM(PSTR("TotalPower4")).setUInt(totalPowerDc);
     attr_dc_side.addAttributePMEM(PSTR("Current4")).setFloat(currentDc);
     if (timeDiff > 0 && apsystems.validTotalPower4()) {
@@ -1569,6 +1574,8 @@ void ZCLFrame::parseAPSAttributes(Z_attribute_list& attr_list) {
 
   attr_list.addAttributePMEM(PSTR("dc")).setStrRaw(attr_dc_side.toString(true).c_str());
 }
+
+#endif
 
 // ZCL_READ_ATTRIBUTES
 void ZCLFrame::parseReadAttributes(Z_attribute_list& attr_list) {
