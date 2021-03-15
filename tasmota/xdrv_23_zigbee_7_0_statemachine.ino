@@ -461,7 +461,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_WAIT(15500)                             // wait for 15 seconds for Tasmota to stabilize
 
     //ZI_MQTT_STATE(ZIGBEE_STATUS_BOOT, "Booting")
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "rebooting CC2530 device")
+    // ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "rebooting CC2530 device")
 
     ZI_CALL(&ZNP_Reset_Device, 0)         // LOW = reset
     ZI_WAIT(100)                          // wait for .1 second
@@ -482,28 +482,17 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_ON_ERROR_GOTO(ZIGBEE_LABEL_FACT_RESET_COORD)
     ZI_SEND(ZBS_ZNPHC)                        // check value of ZNP Has Configured
     ZI_WAIT_RECV(2000, ZBR_ZNPHC)
-
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------1")
-
     ZI_SEND(ZBS_LOGTYPE)                      // check the logical type
     ZI_WAIT_RECV(1000, ZBS_LOGTYPE_COORD)     // it should be coordinator
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------2")
     ZI_SEND(ZBS_PAN)                          // check PAN ID
     ZI_WAIT_RECV(1000, ZBR_PAN)
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------3")
     ZI_SEND(ZBS_EXTPAN)                       // check EXT PAN ID
     ZI_WAIT_RECV(1000, ZBR_EXTPAN)
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------4")
-
     // CS: Why we are not able to switch the channel? The firmware is currently build for channel 16 ! Fixme !!
-
     // ZI_SEND(ZBS_CHANN)                        // check CHANNEL
     // ZI_WAIT_RECV(1000, ZBR_CHANN)
-    // ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------5")
     ZI_SEND(ZBS_IEEE)                        // check IEEE
     ZI_WAIT_RECV(1000, ZBR_IEEE)
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "aaa-------------------6")
-
 
 #ifndef USE_ZIGBEE_DISABLED_SECURITY
     ZI_SEND(ZBS_PFGKEN)                       // check PFGKEN
@@ -525,7 +514,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_MQTT_STATE(ZIGBEE_STATUS_STARTING, kConfiguredCoord)
     ZI_ON_ERROR_GOTO(ZIGBEE_LABEL_ABORT)
     // Z_ZDO:startupFromApp
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "starting zigbee coordinator")
+    // ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "starting zigbee coordinator")
     ZI_SEND(ZBS_STARTUPFROMAPP)                       // start coordinator
     ZI_WAIT_RECV(5000, ZBR_STARTUPFROMAPP)        // wait for sync ack of command
     ZI_WAIT_UNTIL_FUNC(20000, AREQ_STARTUPFROMAPP, &ZNP_ReceiveStateChange)      // wait for async message that coordinator started, max 20s
@@ -569,7 +558,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
 
   ZI_LABEL(ZIGBEE_LABEL_FACT_RESET_COORD)                                    // reformat device
     ZI_MQTT_STATE(ZIGBEE_STATUS_RESET_CONF, kResetting)
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee bad configuration of device, doing a factory reset")
+    // ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee bad configuration of device, doing a factory reset")
     ZI_ON_ERROR_GOTO(ZIGBEE_LABEL_ABORT)
     ZI_SEND(ZBS_FACTRES)                          // factory reset
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
@@ -603,7 +592,7 @@ static const Zigbee_Instruction zb_prog[] PROGMEM = {
     ZI_SEND(ZBS_WNV_ZNPHC)                        // Write NV ZNP Has Configured
     ZI_WAIT_RECV(1000, ZBR_WNV_OK)
 
-    ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee device reconfigured")
+    // ZI_LOG(LOG_LEVEL_INFO, D_LOG_ZIGBEE "zigbee device reconfigured")
     ZI_GOTO(ZIGBEE_LABEL_START_COORD)
 
     // ======================================================================

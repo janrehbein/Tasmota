@@ -1965,12 +1965,6 @@ int32_t ZNP_ReceiveAfIncomingMessage(int32_t res, const SBuffer &buf) {
                               srcendpoint, dstendpoint, wasbroadcast,
                               linkquality, securityuse, seqnumber);
   //
-
-// #ifdef USE_AP_SYSTEMS
-//   // Try AP Systems PV parser
-//   Z_APS_Parser(buf, srcaddr);
-// #endif
-
   Z_IncomingMessage(zcl_received);
 
   return -1;
